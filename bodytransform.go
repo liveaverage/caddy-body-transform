@@ -2,7 +2,6 @@ package bodytransform
 
 import (
     "bytes"
-    "encoding/json"
     "fmt"
     "io/ioutil"
     "net/http"
@@ -46,7 +45,7 @@ func (bt BodyTransform) ServeHTTP(w http.ResponseWriter, r *http.Request, next c
         return err
     }
 
-    // Create a new Lua state for this request
+    // Create a new Lua thread for this request
     L := bt.luaState.NewThread()
 
     // Push the body onto the Lua stack
