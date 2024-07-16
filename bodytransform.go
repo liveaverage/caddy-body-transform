@@ -9,6 +9,7 @@ import (
     "github.com/caddyserver/caddy/v2"
     "github.com/caddyserver/caddy/v2/modules/caddyhttp"
     lua "github.com/yuin/gopher-lua"
+    json "github.com/layeh/gopher-json"
 )
 
 func init() {
@@ -32,6 +33,7 @@ func (BodyTransform) CaddyModule() caddy.ModuleInfo {
 // Provision sets up the module. Loads the Lua script.
 func (bt *BodyTransform) Provision(ctx caddy.Context) error {
     bt.luaState = lua.NewState()
+    json.Preload(bt.luaState)
     if err := bt.luaState.DoString(bt.Script); err != nil {
         return fmt.Errorf("failed to load Lua script: %v", err)
     }
@@ -49,6 +51,7 @@ func (bt BodyTransform) ServeHTTP(w http.ResponseWriter, r *http.Request, next c
     // Create a new Lua state for this request
     L := lua.NewState()
     defer L.Close()
+    json.Preload(L)
 
     // Load the script into the new Lua state
     if err := L.DoString(bt.Script); err != nil {
