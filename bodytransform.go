@@ -5,6 +5,7 @@ import (
     "fmt"
     "io/ioutil"
     "net/http"
+
     "github.com/caddyserver/caddy/v2"
     "github.com/caddyserver/caddy/v2/modules/caddyhttp"
     lua "github.com/yuin/gopher-lua"
@@ -45,8 +46,14 @@ func (bt BodyTransform) ServeHTTP(w http.ResponseWriter, r *http.Request, next c
         return err
     }
 
-    // Create a new Lua thread for this request
-    L := bt.luaState.NewThread()
+    // Create a new Lua state for this request
+    L := lua.NewState()
+    defer L.Close()
+
+    // Load the script into the new Lua state
+    if err := L.DoString(bt.Script); err != nil {
+        return fmt.Errorf("failed to load Lua script: %v", err)
+    }
 
     // Push the body onto the Lua stack
     L.Push(lua.LString(string(body)))
