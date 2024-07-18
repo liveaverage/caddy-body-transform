@@ -45,11 +45,14 @@ func (bt *BodyTransform) Provision(ctx caddy.Context) error {
 func (bt *BodyTransform) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddyhttp.Handler) error {
     if bt.TransformType == "response" {
         // Capture the response
-        recorder := &responseRecorder{ResponseWriter: w}
+        recorder := &responseRecorder{ResponseWriter: w, body: &bytes.Buffer{}}
         err := next.ServeHTTP(recorder, r)
         if err != nil {
             return err
         }
+
+        // Log that the response transformation is being executed
+        fmt.Println("Executing response transformation")
 
         // Transform the response body
         transformedBody, err := bt.transform(recorder.body.Bytes())
@@ -58,6 +61,9 @@ func (bt *BodyTransform) ServeHTTP(w http.ResponseWriter, r *http.Request, next 
         }
 
         // Write the transformed response
+        for k, v := range recorder.Header() {
+            w.Header()[k] = v
+        }
         w.Header().Set("Content-Length", fmt.Sprint(len(transformedBody)))
         w.WriteHeader(recorder.statusCode)
         _, err = w.Write(transformedBody)
@@ -116,12 +122,11 @@ func (bt *BodyTransform) transform(body []byte) ([]byte, error) {
 type responseRecorder struct {
     http.ResponseWriter
     statusCode int
-    body       bytes.Buffer
+    body       *bytes.Buffer
 }
 
 func (rec *responseRecorder) WriteHeader(statusCode int) {
     rec.statusCode = statusCode
-    rec.ResponseWriter.WriteHeader(statusCode)
 }
 
 func (rec *responseRecorder) Write(b []byte) (int, error) {
