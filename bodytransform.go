@@ -43,6 +43,9 @@ func (bt *BodyTransform) Provision(ctx caddy.Context) error {
 
 // ServeHTTP implements the caddyhttp.MiddlewareHandler interface.
 func (bt *BodyTransform) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddyhttp.Handler) error {
+    // Initial log to confirm the handler is called
+    fmt.Println("BodyTransform ServeHTTP called")
+
     if bt.TransformType == "response" {
         // Capture the response
         recorder := &responseRecorder{ResponseWriter: w, body: &bytes.Buffer{}}
@@ -53,6 +56,9 @@ func (bt *BodyTransform) ServeHTTP(w http.ResponseWriter, r *http.Request, next 
 
         // Log that the response transformation is being executed
         fmt.Println("Executing response transformation")
+
+        // Log the captured response body
+        fmt.Println("Captured response body: " + recorder.body.String())
 
         // Transform the response body
         transformedBody, err := bt.transform(recorder.body.Bytes())
@@ -67,7 +73,13 @@ func (bt *BodyTransform) ServeHTTP(w http.ResponseWriter, r *http.Request, next 
         w.Header().Set("Content-Length", fmt.Sprint(len(transformedBody)))
         w.WriteHeader(recorder.statusCode)
         _, err = w.Write(transformedBody)
-        return err
+        if err != nil {
+            return err
+        }
+
+        // Log the transformed response body
+        fmt.Println("Transformed response body: " + string(transformedBody))
+        return nil
     }
 
     // Transform the request body
